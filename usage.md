@@ -29,7 +29,7 @@ The Push Service exposes a single **bidirectional streaming** gRPC endpoint that
 | **Service** | `PushService` |
 | **Method** | `StreamPush` |
 | **Streaming** | Bidirectional (client → server, server → client) |
-| **Default port** | `50051` |
+| **Sandbox endpoint** | `trans-api-grpc.sandbox53.localytics.com:50051` |
 
 ---
 
@@ -246,7 +246,7 @@ import (
 )
 
 func main() {
-	conn, err := grpc.NewClient("localhost:50051",
+	conn, err := grpc.NewClient("trans-api-grpc.sandbox53.localytics.com:50051",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -449,7 +449,7 @@ def generate_requests():
 
 def main():
     # Use insecure channel for local dev; use grpc.secure_channel() in production
-    channel = grpc.insecure_channel("localhost:50051")
+    channel = grpc.insecure_channel("trans-api-grpc.sandbox53.localytics.com:50051")
     stub = push_pb2_grpc.PushServiceStub(channel)
 
     metadata = create_auth_metadata("your-api-key", "your-api-secret")
@@ -499,7 +499,7 @@ async def main():
     credentials = base64.b64encode(b"your-api-key:your-api-secret").decode()
     metadata = [("authorization", f"Basic {credentials}")]
 
-    async with grpc.aio.insecure_channel("localhost:50051") as channel:
+    async with grpc.aio.insecure_channel("trans-api-grpc.sandbox53.localytics.com:50051") as channel:
         stub = push_pb2_grpc.PushServiceStub(channel)
         stream = stub.StreamPush(metadata=metadata)
 
@@ -566,7 +566,7 @@ const proto = grpc.loadPackageDefinition(packageDef).push;
 
 // Create client
 const client = new proto.PushService(
-  "localhost:50051",
+  "trans-api-grpc.sandbox53.localytics.com:50051",
   grpc.credentials.createInsecure()
 );
 
@@ -684,7 +684,7 @@ public class PushClient {
 
     public static void main(String[] args) throws Exception {
         ManagedChannel channel = ManagedChannelBuilder
-                .forAddress("localhost", 50051)
+                .forAddress("trans-api-grpc.sandbox53.localytics.com", 50051)
                 .usePlaintext()
                 .build();
 
@@ -790,7 +790,7 @@ go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest  # Go
 **List services:**
 
 ```bash
-grpcurl -plaintext localhost:50051 list
+grpcurl -plaintext trans-api-grpc.sandbox53.localytics.com:50051 list
 # push.PushService
 # grpc.health.v1.Health
 ```
@@ -798,7 +798,7 @@ grpcurl -plaintext localhost:50051 list
 **Describe the service:**
 
 ```bash
-grpcurl -plaintext localhost:50051 describe push.PushService
+grpcurl -plaintext trans-api-grpc.sandbox53.localytics.com:50051 describe push.PushService
 ```
 
 **Send a streaming request (using stdin):**
@@ -813,7 +813,7 @@ echo '
   -plaintext \
   -d @ \
   -rpc-header "authorization: Basic $(echo -n 'your-api-key:your-api-secret' | base64)" \
-  localhost:50051 \
+  trans-api-grpc.sandbox53.localytics.com:50051 \
   push.PushService/StreamPush
 ```
 
@@ -827,7 +827,7 @@ grpcurl \
   -rpc-header "authorization: Basic $(echo -n 'key:secret' | base64)" \
   -d '{"init": {"app_id": "your-app-id"}}
       {"push": {"customer_ids": ["user-1"], "alert": {"body": "Test"}}}' \
-  localhost:50051 \
+  trans-api-grpc.sandbox53.localytics.com:50051 \
   push.PushService/StreamPush
 ```
 
