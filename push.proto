@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package push;
+
+option go_package = "github.com/localytics/push-notification-protos/push";
+
+import "google/protobuf/struct.proto";
+
+// ─── Alert ───────────────────────────────────────────
+// Push notification content
+message Alert {
+  string body = 1;                  // required — the notification text
+  optional string title = 2;       // optional — short title
+  optional string subtitle = 3;    // optional — iOS 10+ only
+}
+
+// ─── Platform-Specific Parameters ────────────────────
+
+// iOS push options
+message IOSParams {
+  optional string sound = 1;               // sound file name or "default"
+  optional int32 badge = 2;                // unread badge number
+  optional string category = 3;            // interactive push category
+  optional bool content_available = 4;     // true by default
+  optional bool mutable_content = 5;       // false by default
+  google.protobuf.Struct extra = 6;        // arbitrary JSON object
+}
+
+// Android push options
+message AndroidParams {
+  optional string priority = 1;            // message priority
+  google.protobuf.Struct extra = 2;        // arbitrary JSON object
+}
+
+// Web push options
+message WebParams {
+  optional string badge = 1;               // URL to image for app icon
+  optional string dir = 2;                 // "ltr", "rtl", or "auto"
+  optional string icon = 3;               // URL to thumbnail image
+  optional bool require_interaction = 4;
+  optional bool renotify = 5;
+  optional bool silent = 6;
+  optional string tag = 7;
+  google.protobuf.Struct extra = 8;        // arbitrary JSON object
+}
+
+// ─── Labels ──────────────────────────────────────────
+// Up to 10 labels for campaign performance tracking
+message Labels {
+  optional string label1 = 1;
+  optional string label2 = 2;
+  optional string label3 = 3;
+  optional string label4 = 4;
+  optional string label5 = 5;
+  optional string label6 = 6;
+  optional string label7 = 7;
+  optional string label8 = 8;
+  optional string label9 = 9;
+  optional string label10 = 10;
+}
+
+// ─── Stream Initialization ───────────────────────────
+// Sent once as the first message when the stream opens.
+message StreamInit {
+  string app_id = 1;                       // required — the app UUID
+  optional string request_id = 2;          // optional, max 255 chars
+  optional string campaign_key = 3;        // optional, max 255 chars
+  optional Labels labels = 4;
+  optional bool all_devices = 5;           // false by default
+  optional bool test = 6;
+}
+
+// ─── Push Request ────────────────────────────────────
+// One per streamed message. Each targets one or more customer_ids.
+message PushRequest {
+  repeated string customer_ids = 1;        // required, non-empty strings
+  optional Alert alert = 2;               // required — rejected if missing
+  optional IOSParams ios = 3;
+  optional AndroidParams android = 4;
+  optional WebParams web = 5;
+}
+
+// ─── Stream Message Wrapper ──────────────────────────
+// First message MUST be init. All subsequent MUST be push.
+message PushStreamMessage {
+  oneof payload {
+    StreamInit init = 1;
+    PushRequest push = 2;
+  }
+}
+
+// ─── Response ────────────────────────────────────────
+message PushResponse {
+  string request_id = 1;
+  int32 total_messages = 2;
+  int32 total_customer_ids = 3;
+  string status = 4;                       // "accepted" or "error"
+  optional string error = 5;
+  int64 campaign_id = 6;
+}
+
+message PushFailure {
+  repeated  string customer_ids = 1; // customer_ids that failed (subset of those in the request)
+  string reason = 2;
+}
+
+message PushStreamResponse {
+  oneof response {
+    PushFailure failure = 1;
+    PushResponse summary = 2;
+  }
+}
+
+// ─── Service ─────────────────────────────────────────
+service PushService {
+  // Bidirectional: client sends StreamInit first, then PushRequests.
+  // Server streams back PushFailure notifications for failed customer_ids. At the end, a push summary response is sent.
+  rpc StreamPush(stream PushStreamMessage) returns (stream PushStreamResponse);
+}
